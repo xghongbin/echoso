@@ -3,7 +3,7 @@
   * wechat php test
   */
 
-//define your token
+//define your token 
 define("TOKEN", "echoso");
 define("APPID", "wx0b0b9449118256f3");
 define("APPSECRET", "28efc088e60a03ecea09990183932fd8");
@@ -168,7 +168,7 @@ class wechatCallbackapiTest
 	 */
     public function responseMsg()
     {
-		//访问获取原始 POST 数据
+		//访问获取原始 POST 数据 
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
 
 		if (!empty($postStr)){
