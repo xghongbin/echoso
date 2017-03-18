@@ -168,8 +168,8 @@ class wechatCallbackapiTest
 	 */
     public function responseMsg()
     {
-		//访问获取原始 POST 数据 
-		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
+		//访问获取原始 POST 数据
+          $postStr =  isset($GLOBALS["HTTP_RAW_POST_DATA"])?$GLOBALS["HTTP_RAW_POST_DATA"] :file_get_contents("php://input");
 
 		if (!empty($postStr)){
 
@@ -337,9 +337,11 @@ class wechatCallbackapiTest
      *  @param  $object
 	 * */
 	private function receiveLocation($object){
-        $LocationContent = "您发送的是位置，纬度为".$object->Location_X.";经度为:".$object->Location_Y.";缩放级别为：".$object->Scale.";位置描述:".$object->Label;
+        $LocationContent = "您发送的是位置，纬度为".$object->Location_X.";经度为:".$object->Location_Y.";缩放级别为：".$object->Scale.";位置描述:".$object->Label.";MsgId:".$object->MsgId;
+        $LocationRequest = $this->transmitText($object,$LocationContent);
         /*
-         *  此处返回不了地理位置消息，以后再做打算，暂定返回文本消息
+         *  此处验证200通过，但具体用途是发送“附件银行(地方名)”,返回具体附近地点等信息
+         *  开发者服务器是不能返回地理位置消息显示的，所以这是一个误区
          * $LocationContent = array(
               "Location_X"=>$object->Location_X,
               "Location_Y"=>$object->Location_Y,
@@ -348,7 +350,6 @@ class wechatCallbackapiTest
               "MsgId"    =>$object->MsgId
         );*/
         //$LocationContent = "id:".$object->MsgId;
-        $LocationRequest = $this->transmitText($object,$LocationContent);
         //$LocationRequest = $this->transmitLocation($object,$LocationContent);
         return $LocationRequest;
 
@@ -644,16 +645,16 @@ class wechatCallbackapiTest
      * */
     public function return_AccessToken(){
         //$cache_access_token = $this->_memcache_get("access_token");
-        $cache_access_token = "";
+        //$cache_access_token = "";
 
-        if(!$cache_access_token){
+        //if(!$cache_access_token){
             $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appid."&secret=".$this->appsecret;
             $access_token = $this->http_request($url);
             //$this->_memcache_set("access_token",$access_token['access_token'],6000);
             return $access_token['access_token'];
-        }
+        //}
 
-        return $cache_access_token;
+        //return $cache_access_token;
     }
 
 

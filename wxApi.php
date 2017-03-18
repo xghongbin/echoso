@@ -1,26 +1,19 @@
 <?php
 /**
-  * wechat php test
+  * 微信类
+  * wechat_class.php
   */
- 
-//define your token
-define("TOKEN", "echoso");
-$wechatObj = new wechatCallbackapiTest();
 
- 
- if(isset($_GET['echostr'])){
-    $wechatObj->valid();
-}else{
-    $wechatObj->responseMsg();
-}
 
-class wechatCallbackapiTest
+class wechatCallbackapi
 {
+    /*
+     * 确认微信签名的比对返回随机字符串
+     * */
     public function valid()
     {
         $echoStr = $_GET["echostr"];
- 
-        //valid signature , option
+
         if($this->checkSignature()){
             echo $echoStr;
             exit;
@@ -62,7 +55,10 @@ class wechatCallbackapiTest
             exit;
         }
     }
-         
+
+    /*
+     * 检验微信加密签名
+     * */
     private function checkSignature()
     {
         $signature = $_GET["signature"];
