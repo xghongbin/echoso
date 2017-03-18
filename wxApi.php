@@ -148,7 +148,7 @@ class wechatCallbackapi
         /*
          * 后期关键字回复从数据库中取出，后台设置关键字、回复内容等都从后台编辑。
          * */
-        if($keyword == "echoso" )
+        if(strtolower($keyword) == "echoso" )
         {
             /*
              * 这里可以有后台设置是文本回复还是echoso二维码回复
@@ -444,6 +444,10 @@ class wechatCallbackapi
                  * */
                 $eventContent = "";
                 break;
+                /*
+                 * 点击菜单拉取消息的时间推送，click可以根据自定义菜单接口中Key相互对应，任何值都可以
+                 *
+                 * */
             case "CLICK":
                 switch ($object->EventKey)
                 {
@@ -461,19 +465,19 @@ class wechatCallbackapi
                         break;
                 }
                 break;
-            case "view":
+            case "view":    // 点击菜单拉取消息的时间推送
                 $eventContent = "跳转链接:".$object->url;
                 break;
-            case "scan":
+            case "scan":    // 点击菜单拉取消息的时间推送
                 $eventContent = "扫描场景:".$object->EventKey;
                 break;
-            case "location":
+            case "location_select":    // 弹出地理位置选择器的事件推送
                 $eventContent = "上传位置: ".$object->SendLocationInfo->Location_X.";经度".$object->SendLocationInfo->Location_Y."; 发送的位置信息".$object->SendLocationInfo->Label;
                 break;
-            case "scancode_waitmsg":
+            case "scancode_waitmsg":    // 扫码推事件且弹出“消息接收中”提示框的事件推送
                 $eventContent = "扫码带提示：类型".$object->ScanCodeInfo->ScanType." 结果：".$object->ScanCodeInfo->ScanResult;
                 break;
-            case "scancode_push":
+            case "scancode_push":   // 点击菜单拉取消息的时间推送
                 $eventContent = "扫码推事件:";
                 break;
             default:
@@ -608,29 +612,6 @@ class wechatCallbackapi
 
 
     /*
-     *  获取  Access_token 借口调用凭证
-     *  获取之前，判断SAE memcache 是否有 access_token的值，若有，则返回，若过期，则重新获取
-     *  bug : 获取 Access_token 使用的是   GET
-     * */
-    public function return_AccessToken()
-    {
-        $cache_access_token = "";
-        /*
-         * 这里调用 appid 和 appsecret 使用$this->
-         * */
-        if(!$cache_access_token)
-        {
-            $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appid."&secret=".$this->appsecret;
-            $access_token = $this->http_request($url);
-            //$this->_memcache_set("access_token",$access_token['access_token'],6000);
-            return $access_token['access_token'];
-        }
-
-        //return $cache_access_token;
-    }
-
-
-    /*
      *  设置 自定义菜单
      *  bug: 设置自定义菜单 使用的是 POST
      *  若后期需要记录设置 [自定义菜单] 返回的错误时，可以使用 return 返回记录到log或者是添加错误记录到MYsql
@@ -663,6 +644,101 @@ class wechatCallbackapi
         $DelMenuURL = "https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=".$accessToken;
         return $result = $this->http_request($DelMenuURL);
     }
+
+    /*
+     * 使用读写文件的方式获取 access_token
+     * */
+    public function file_ReturnAccessToken()
+    {
+
+        // 文件读取json数据
+        $data = json_decode(@file_get_contents("_access_token.json"),true);
+
+        if($data['expires_time'] < time())
+        {
+            $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appid."&secret=".$this->appsecret;
+            $AccessTokenResult = $this->http_request($url);
+            $access_token = $AccessTokenResult['access_token'];
+
+            // 将access_token缓存于文件中
+            $data['expires_time'] = time() + 7000;
+            $data['access_token'] = $access_token;
+
+            $fp = @fopen("_access_token.json","w");
+            @fwrite($fp,json_encode($data));
+            @fclose($fp);
+
+        }
+        else{
+            $access_token = $data['access_token'];
+        }
+
+        return $access_token;
+
+    }
+
+
+
+
+    /*
+     *  获取  Access_token 借口调用凭证【使用memcache】
+     *  获取之前，判断 SAE memcache 是否有 access_token的值，若有，则返回，若过期，则重新获取
+     *  bug : 获取 Access_token 使用的是   GET
+     *
+    public function Mmc_ReturnAccessToken()
+    {
+        // 这里注意调用 appid 和 appsecret 使用$this-> 的要点
+
+        $cache_access_token = $this->_memcache_get("access_token");
+
+        if(!$cache_access_token){
+            $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appid."&secret=".$this->appsecret;
+            $access_token = $this->http_request($url);
+            $this->_memcache_set("access_token",$access_token['access_token'],6000);
+            return $access_token['access_token'];
+        }
+
+        return $cache_access_token;
+    }
+    */
+
+    /*
+     *  实例化SAE  memcache
+     *  具体使用信息，参照
+     *  https://www.sinacloud.com/doc/sae/php/memcache.html#api-shi-yong-shou-ce
+     *
+    public function _memcache_init(){
+        //  实例化SAE对象
+        //$mmc = new Memcache();
+
+        //  使用当前应用的memcache
+        //$mmc ->connect();
+
+        //return $mmc;
+    }
+    */
+
+    /*
+     *  设置 SAE memcache
+     *  @param  $key    设置memcache值的名称
+     *  @param  $value  设置memcache的值
+     *  @param  $time   设置key的有效事件：0=永久有效  s
+     *
+    public function _memcache_set($key,$value,$time = 0){
+        //$mmc = $this->_memcache_init();
+        //$mmc->set($key,$value,0,$time);
+    }
+	*/
+
+    /*
+     *  获取 SAE memcache
+     *  @param  $key    设置需要获取memcache的值的名称
+     *
+    public function _memcache_get($key){
+        $mmc = $this->_memcache_init();
+        return $mmc->get($key);
+    }
+	*/
 
 
 }//class
