@@ -34,7 +34,7 @@ class wechatCallbackapiTest
           //extract post data
         if (!empty($postStr)){
                  
-                  $postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
+                $postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
                 $fromUsername = $postObj->FromUserName;
                 $toUsername = $postObj->ToUserName;
                 $keyword = trim($postObj->Content);
@@ -46,7 +46,7 @@ class wechatCallbackapiTest
                             <MsgType><![CDATA[%s]]></MsgType>
                             <Content><![CDATA[%s]]></Content>
                             <FuncFlag>0</FuncFlag>
-                            </xml>";             
+                            </xml>";
                 if(!empty( $keyword ))
                 {
                       $msgType = "text";
