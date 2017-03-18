@@ -1,58 +1,20 @@
 <?php
-/*
- * 包含wechat_class.php文件
- * */
+/**
+ * Created by PhpStorm.
+ * User: xghongbin  菜单设置、返回菜单json、删除菜单
+ * Date: 2016/10/31
+ * Time: 11:21 
+ */
+
 require "wxApi.php";
 define("TOKEN", "echoso");
 define("APPID", "wx0b0b9449118256f3");
 define("APPSECRET", "28efc088e60a03ecea09990183932fd8");
-define("SETTYPE",'3');
-define("SETMENU",false);
-define("SRETURNMENU",false);
-define("DELMENU",false);
 
 $wechatObj = new wechatCallbackapi(APPID,APPSECRET);
 
-if(isset($_GET['echostr'])){
-    $wechatObj->valid();
-}else{
-    $wechatObj->responseMsg();
-}
-
-
-/*
- *  获取 AccessToken ,判断时间是否已经超过 7200秒
- *  获取 access_token 有三种方法：
- *  1. memcache 获取缓存   （SAE）
- *  2. 数据库存表数据获取
- *  3. 文件读写操作
- * SETTYPE  为1使用SAE Memcache
- *          为2使用数据库
- *          为3使用文件读写操作（SAE不支持此操作方案）
- * */
-    if(SETTYPE == '1')
-    {
-        //$accessToken = $wechatObj->return_AccessToken();
-    }
-    elseif (SETTYPE == '2')
-    {
-
-    }else
-    {
-        $accessToken = $wechatObj->file_ReturnAccessToken();
-    }
-
-
-/*
- *  设置 [自定义菜单]
- *  return：
- *          Array ( [errcode] => 0 [errmsg] => ok )
- *  PS:
- *      后期后台设置操作，数据库查询获取自定义菜单
- * */
-    if(SETMENU){
-        if(!empty($accessToken)){
-            $jsonmenu = '
+$accessToken = $wechatObj->file_ReturnAccessToken();
+$jsonmenu = '
                 {
                     "button": [
                         {
@@ -113,24 +75,9 @@ if(isset($_GET['echostr'])){
                     ]
                 }
                 ';
-            $wechatObj->set_men($accessToken,$jsonmenu);
-        }
-    }
-    /*
-     *  返回[自定义菜单]JSON格式数据
-     * */
-    if(SRETURNMENU){
-        if(!empty($accessToken)){
-            print_r($wechatObj->return_setmenu_json($accessToken));
-        }
-    }
+ $return_menu   = $wechatObj->set_men($accessToken,$jsonmenu);
+// $return_menu   = $wechatObj->return_setmenu_json($accessToken);
+// $return_menu   = $wechatObj->del_setmenu($accessToken);
 
-    /*
-     *  删除[自定义菜单]
-     * */
-    if(DELMENU){
-        if(!empty($accessToken)){
-            print_r($wechatObj->del_setmenu($accessToken));
-        }
-    }
-?>
+echo "<pre/>";
+var_dump($return_menu);
