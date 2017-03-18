@@ -9,7 +9,7 @@ define("APPID", "wx0b0b9449118256f3");
 define("APPSECRET", "28efc088e60a03ecea09990183932fd8");
 define("SETTYPE",'1');
 
-$wechatObj = new wechatCallbackapiTest(APPID,APPSECRET);
+$wechatObj = new wechatCallbackapi(APPID,APPSECRET);
 
 
 
@@ -169,7 +169,7 @@ class wechatCallbackapiTest
     public function responseMsg()
     {
 		//访问获取原始 POST 数据
-          $postStr =  isset($GLOBALS["HTTP_RAW_POST_DATA"])?$GLOBALS["HTTP_RAW_POST_DATA"] :file_get_contents("php://input");
+          $postStr = isset($_GLOBALS['HTTP_RAW_POST_DATA'])? $_GLOBALS['HTTP_RAW_POST_DATA']: file_get_contents('php://input');
 
 		if (!empty($postStr)){
 
