@@ -52,8 +52,7 @@ if(isset($_GET['echostr'])){
  * */
     if(SETMENU){
         if(!empty($accessToken)){
-            $jsonmenu = '
-                {
+            $jsonmenu = '{
                     "button": [
                         {
                             "name": "菜单", 
@@ -69,21 +68,11 @@ if(isset($_GET['echostr'])){
                                    "name":"跳转",
                                    "key":"view",
                                    "url":"http://www.soso.com/"
-                                },
-                                {	
-                                   "type":"click",
-                                   "name":"扫描场景",
-                                   "key":"scan"
-                                },
+                                }
                                 {
                                     "name": "上传位置", 
                                     "type": "location_select", 
                                     "key": "location"
-                                },
-                                {
-                                    "name": "扫码带提示", 
-                                    "type": "scancode_waitmsg", 
-                                    "key": "scancode_waitmsg", 
                                 }
                             ]
                         },
@@ -113,7 +102,7 @@ if(isset($_GET['echostr'])){
                     ]
                 }
                 ';
-            $wechatObj->set_men($accessToken,$jsonmenu);
+            $wechatObj->set_menu($accessToken,$jsonmenu);
         }
     }
     /*
