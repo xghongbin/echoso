@@ -14,8 +14,7 @@ define("APPSECRET", "28efc088e60a03ecea09990183932fd8");
 $wechatObj = new wechatCallbackapi(APPID,APPSECRET);
 
 $accessToken = $wechatObj->file_ReturnAccessToken();
-$jsonmenu = '
-                {
+$jsonmenu = '{
                     "button": [
                         {
                             "name": "菜单", 
@@ -34,18 +33,9 @@ $jsonmenu = '
                                 },
                                 {	
                                    "type":"click",
-                                   "name":"扫描场景",
-                                   "key":"scan"
-                                },
-                                {
-                                    "name": "上传位置", 
-                                    "type": "location_select", 
-                                    "key": "location"
-                                },
-                                {
-                                    "name": "扫码带提示", 
-                                    "type": "scancode_waitmsg", 
-                                    "key": "scancode_waitmsg", 
+                                   "name":"微信墙",
+                                   "key":"wxshow",
+                                   "url":"http://www.soso.com/"
                                 }
                             ]
                         },
@@ -71,11 +61,26 @@ $jsonmenu = '
                                     "sub_button": [ ]
                                 }
                             ]
+                        },
+                        {
+                            "name": "网页授权", 
+                            "sub_button": [
+                                {
+                                    "type": "view", 
+                                    "name": "base型", 
+                                    "url":"http://echoso.s3.natapp.cc/echoso/snsapi/snsapi_base.php"
+                                 },
+                                 {
+                                    "type": "view", 
+                                    "name": "userinfo型", 
+                                    "url":"http://echoso.s3.natapp.cc/echoso/snsapi/snsapi_userinfo.php"
+                                 }
+                            ]
                         }
                     ]
                 }
                 ';
- $return_menu   = $wechatObj->set_men($accessToken,$jsonmenu);
+ $return_menu   = $wechatObj->set_menu($accessToken,$jsonmenu);
 // $return_menu   = $wechatObj->return_setmenu_json($accessToken);
 // $return_menu   = $wechatObj->del_setmenu($accessToken);
 

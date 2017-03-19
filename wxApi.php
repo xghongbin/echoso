@@ -3,8 +3,8 @@
   * 微信类
   * wechat_class.php
   */
-
-
+require ("Db/db.php");
+//require ("function/function.php");
 class wechatCallbackapi
 {
     //  成员属性
@@ -74,9 +74,11 @@ class wechatCallbackapi
     public function responseMsg()
     {
         /*
-         * 预定义变量，获取原生post数据isset($_GLOBALS['HTTP_RAW_POST_DATA'])? $_GLOBALS['HTTP_RAW_POST_DATA']:
+         * 预定义变量，获取原生post数据 isset($GLOBALS['HTTP_RAW_POST_DATA'])? $GLOBALS['HTTP_RAW_POST_DATA']:
+         * php5.6不建议使用$GLOBALS[]来接收POST数据,推荐改用  file_get_contents("php://input");
+         *
          * */
-        $postStr = file_get_contents('php://input');
+        $postStr = isset($GLOBALS['HTTP_RAW_POST_DATA'])? $GLOBALS['HTTP_RAW_POST_DATA']:file_get_contents('php://input');
 
         if (!empty($postStr))
         {
@@ -436,7 +438,83 @@ class wechatCallbackapi
         switch ($object->Event)
         {
             case "subscribe"://订阅
-                $eventContent = "欢迎关注Echoso，您可以发送以下文字，获取测试\n 'ecsho'\n '音乐'\n '单图文'\n '多图文'";
+                //$eventContent = "欢迎关注Echoso，您可以发送以下文字，获取测试\n 'ecsho'\n '音乐'\n '单图文'\n '多图文'";
+
+                /*
+                 * 微信墙：请求获取用户基本信息接口的地址
+                 * */
+                $openid =   $object->FromUserName;
+                $accessToken = $this->file_ReturnAccessToken();
+                $url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token={$accessToken}&openid={$openid}&lang=zh_CN";
+                $userInfo = $this->http_request($url);
+                //var_dump($userInfo['headimgurl']);
+                //exit();
+/*
+ *
+ * array(13) {
+  ["subscribe"]=>
+  int(1)
+  ["openid"]=>
+  string(28) "os58pwqkO8l7b_oCOU9Imt6VnPI8"
+  ["nickname"]=>
+  string(5) "csohi"
+  ["sex"]=>
+  int(2)
+  ["language"]=>
+  string(5) "zh_CN"
+  ["city"]=>
+  string(6) "广州"
+  ["province"]=>
+  string(6) "广东"
+  ["country"]=>
+  string(6) "中国"
+  ["headimgurl"]=>
+  string(139) "http://wx.qlogo.cn/mmopen/Q3auHgzwzM6yWrNoJKRtfSAgQ3763NOXGtcK9eLoeexUlK8f
+P34xzJc3QCRDTicYPMqQJqK0orTibnsialSbkjOOMj2SYsxFibmsLMkG4AQlZYQ/0"
+  ["subscribe_time"]=>
+  int(1489931065)
+  ["remark"]=>
+  string(0) ""
+  ["groupid"]=>
+  int(0)
+  ["tagid_list"]=>
+  array(0) {
+  }
+}
+ * */
+                $openid = $userInfo['openid'];
+                $nickname = $userInfo['nickname'];
+
+                $sex = $userInfo['sex'];
+                $city = $userInfo['city'];
+                $province = $userInfo['province'];
+                $country = $userInfo['country'];
+               echo $headimgurl = $userInfo['headimgurl'];
+                $subscribe_time = $userInfo['subscribe_time'];// 由于图片属于防盗链的方式，所以需要下载到本地
+                $groupid = $userInfo['groupid'];
+
+                //echo $headimgurl;
+                // 将图片保存在自己的服务器上
+                //$headimgurl = file_get_contents($headimgurl);file_get_contents('php://input')
+                //$headimgurl = $this->http_request($headimgurl);
+
+                $imgName = $openid.'jpg';
+                //print_r($headimgurl);
+                //print_r($imgName);
+                //exit();
+                //保存到本地上
+                $save_dir = "http://echoso.s3.natapp.cc/echoso/userimg/";
+                //$imgArray = $this->getImage($headimgurl,$save_dir,$imgName);
+                $abbc = $this->downFile($headimgurl,$save_dir);
+
+                var_dump($abbc);
+
+                //$Conn = new Mysql();
+                //$Conn->Parameter('127.0.0.1:80', 'root', 'qweasd', 'wechat', '', '');
+                //$abbc = $Conn->querys("insert into userinfo(openid,nickname,sex,city,province,country,headimgurl,subscribe_time)VALUES('$openid','$nickname','$sex','$city','$province','$country','$imgArray[save_path]','$subscribe_time')");
+                //echo $abbc;
+
+
                 break;
             case "unsubscribe"://取消订阅
                 /*
@@ -445,8 +523,8 @@ class wechatCallbackapi
                 $eventContent = "";
                 break;
                 /*
-                 * 点击菜单拉取消息的时间推送，click可以根据自定义菜单接口中Key相互对应，任何值都可以
-                 *
+                 * 点击菜单拉取消息的时间推送，
+                 * click可以根据自定义菜单接口中 Key 相互对应，任何值都可以
                  * */
             case "CLICK":
                 switch ($object->EventKey)
@@ -456,7 +534,7 @@ class wechatCallbackapi
                         $eventContent[] = array(
                             "Title"=>"EchoSo",
                             "Description"=>"欢迎关注EchoSo",
-                            "PicUrl"=>"http://1.echosotoo.applinzi.com/img/echoso.png",
+                            "PicUrl"=>"http://echoso.s3.natapp.cc/img/echoso.png",
                             "Url"=>"www.echoso.com"
                         );
                         break;
@@ -485,7 +563,7 @@ class wechatCallbackapi
                 break;
 
         }
-        //echo $eventContent;
+
         if(is_array($eventContent))
         {
             if(isset($eventContent[0]['PicUrl']))
@@ -501,6 +579,7 @@ class wechatCallbackapi
                 );
                 $EventRequest = $this->transmitMusic($object,$musicContent);
             }
+
         }else{
             $EventRequest = $this->transmitText($object,$eventContent);
         }
@@ -616,7 +695,7 @@ class wechatCallbackapi
      *  bug: 设置自定义菜单 使用的是 POST
      *  若后期需要记录设置 [自定义菜单] 返回的错误时，可以使用 return 返回记录到log或者是添加错误记录到MYsql
      * */
-    public function set_men($accessToken,$jsonArr)
+    public function set_menu($accessToken,$jsonArr)
     {
         $menuURL = "https://api.weixin.qq.com/cgi-bin/menu/create?access_token=".$accessToken;
         return $result = $this->http_request($menuURL,$jsonArr);
@@ -739,6 +818,190 @@ class wechatCallbackapi
         return $mmc->get($key);
     }
 	*/
+
+
+    /*
+     * 微信网页授权[base型授权]
+     * */
+    public function snsapi_base($redirect_uri,$state_data)
+    {
+        /*
+         *  1.准备Scope为snsapi_base的网页授权页面 URL 地址
+         * */
+        $redirect_uri = urlencode($redirect_uri);
+        $snsapi_base_url = "https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appid}&redirect_uri={$redirect_uri}&response_type=code&scope=snsapi_base&state={$state_data}#wechat_redirect";
+
+        /*
+         * 2.引导用户点击url,根据是否成功跳转到回调链接地址，
+         * 成功，返回code,判断code是否成功返回
+         * 失败，继续回调跳转snsapi_base_url地址
+         * */
+        if(!isset($_GET['code']))
+        {
+            header("Location:{$snsapi_base_url}");
+        }
+
+        $base_code = $_GET['code'];
+        /*
+         * 成功，通过code换取网页授权access_token
+         * 通过curl $GET方式请求
+         * */
+        $BaseWebAccessToken_url = "https://api.weixin.qq.com/sns/oauth2/access_token?appid={$this->appid}&secret={$this->appsecret}&code={$base_code}&grant_type=authorization_code";
+        $data = $this->http_request($BaseWebAccessToken_url);
+        $data['state'] = $state_data;
+        return $data;
+
+    }
+
+    /*
+      * 微信网页授权[base型授权]
+      * */
+    public function snsapi_userinfo($redirect_uri,$state_data)
+    {
+        /*
+         *  1.准备Scope为snsapi_userinfo的网页授权页面 URL 地址
+         * */
+        $redirect_uri = urlencode($redirect_uri);
+        $snsapi_userinfo_url = "https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appid}&redirect_uri={$redirect_uri}&response_type=code&scope=snsapi_userinfo&state={$state_data}#wechat_redirect";
+
+        /*
+         * 2.用户手动授权,根据是否成功跳转到回调链接地址，
+         * 成功，返回code,判断code是否成功返回
+         * 失败，继续回调跳转snsapi_base_url地址
+         * */
+        if(!isset($_GET['code']))
+        {
+            header("Location:{$snsapi_userinfo_url}");
+        }
+
+        $userInfo_code = $_GET['code'];
+        /*
+         * 成功，通过code换取网页授权access_token
+         * 通过curl $GET方式请求
+         * */
+        $UserInfoWebAccessToken_url = "https://api.weixin.qq.com/sns/oauth2/access_token?appid={$this->appid}&secret={$this->appsecret}&code={$userInfo_code}&grant_type=authorization_code";
+        $UserInfoResult =  $this->http_request($UserInfoWebAccessToken_url);
+
+        $web_accessToken = $UserInfoResult['access_token'];
+        $web_openId = $UserInfoResult['openid'];
+
+        /*
+         * 根据第三步获取的access_token和openid拉取用户信息
+         * */
+        $userinfo_url ="https://api.weixin.qq.com/sns/userinfo?access_token={$web_accessToken}&openid={$web_openId}&lang=zh_CN";
+        $data =  $this->http_request($userinfo_url);
+        $data['state'] = $state_data;
+        return $data;
+    }
+
+
+    public function getImage($url,$save_dir='',$filename='',$type=1){
+        //if(trim($url)==''){
+        //    return array('file_name'=>'','save_path'=>'','error'=>1);
+        //}
+        if(trim($save_dir)==''){
+            $save_dir='./';
+        }
+        if(trim($filename)==''){//保存文件名
+            $ext=strrchr($url,'.');
+            if($ext!='.gif'&&$ext!='.jpg'){
+                return array('file_name'=>'','save_path'=>'','error'=>3);
+            }
+            $filename=time().$ext;
+        }
+        if(0!==strrpos($save_dir,'/')){
+            $save_dir.='/';
+        }
+        //创建保存目录
+        if(!file_exists($save_dir)&&!mkdir($save_dir,0777,true)){
+            return array('file_name'=>'','save_path'=>'','error'=>5);
+        }
+        //获取远程文件所采用的方法
+        if($type){
+            $ch=curl_init();
+            $timeout=5;
+            curl_setopt($ch,CURLOPT_URL,$url);
+            curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
+            curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
+            $img=curl_exec($ch);
+            curl_close($ch);
+        }else{
+            ob_start();
+            readfile($url);
+            $img=ob_get_contents();
+            ob_end_clean();
+        }
+        //$size=strlen($img);
+        //文件大小
+        $fp2=@fopen($save_dir.$filename,'a');
+        fwrite($fp2,$img);
+        fclose($fp2);
+        unset($img,$url);
+        return array('file_name'=>$filename,'save_path'=>$save_dir.$filename,'error'=>0);
+    }
+
+    /**
+     * CURL下载文件 成功返回文件名，失败返回false
+     * @param $url
+     * @param string $savePath
+     * @return bool|string
+     * @author Zou Yiliang
+     */
+    public function downFile($url, $savePath = './uploads')
+    {
+        //$url = 'http://www.baidu.com/img/bdlogo.png';
+        /*
+        HTTP/1.1 200 OK
+        Connection: close
+        Content-Type: image/jpeg
+        Content-disposition: attachment; filename="cK4q4fLsp7YOlaqxluDOafB.jpg"
+        Date: Sun, 18 Jan 2015 16:56:32 GMT
+        Cache-Control: no-cache, must-revalidate
+        Content-Length: 963704
+        */
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);    //需要response header
+        curl_setopt($ch, CURLOPT_NOBODY, FALSE);    //需要response body
+
+        $response = curl_exec($ch);
+
+        //分离header与body
+        $header = '';
+        $body = '';
+        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == '200') {
+            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE); //头信息size
+            $header = substr($response, 0, $headerSize);
+            $body = substr($response, $headerSize);
+        }
+
+        curl_close($ch);
+
+        //文件名
+        $arr = array();
+        if (preg_match('/filename="(.*?)"/', $header, $arr)) {
+
+            $file = date('Ym') . '/' . $arr[1];
+            $fullName = rtrim($savePath, '/') . '/' . $file;
+
+            //创建目录并设置权限
+            $basePath = dirname($fullName);
+            if (!file_exists($basePath)) {
+                @mkdir($basePath, 0777, true);
+                @chmod($basePath, 0777);
+            }
+
+            if (file_put_contents($fullName, $body)) {
+                return $file;
+            }
+        }
+
+        return false;
+    }
+
 
 
 }//class
